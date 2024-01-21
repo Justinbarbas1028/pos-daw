@@ -22,118 +22,10 @@ $(document).ready(function() {
     showProducts('all items');
 });
 
-
-document.addEventListener('DOMContentLoaded', function() {
-    const buttons = document.querySelectorAll('.add-button');
-    const cart = document.querySelector('.receipt-cart');
-    const totalElement = document.getElementById('total');
-
-    buttons.forEach(button => {
-        button.addEventListener('click', handleAddButtonClick);
-    });
-
-    function handleAddButtonClick() {
-        const itemName = this.dataset.name;
-        const itemPrice = parseFloat(this.dataset.price);
-
-        // Check if item is already in the cart
-        const existingItem = Array.from(cart.children).find(item => item.dataset.name === itemName);
-
-        if (existingItem) {
-            const quantityElement = existingItem.querySelector('.item-quantity');
-            const newQuantity = parseInt(quantityElement.innerText) + 1;
-            quantityElement.innerText = newQuantity;
-
-            // Update the total for the existing item
-            updateItemTotal(existingItem, newQuantity);
-        } else {
-            // Item is not in the cart, create a new entry
-            const itemElement = createCartItemElement(itemName, itemPrice);
-            cart.appendChild(itemElement);
-        }
-
-        // Update total price
-        updateTotal();
-    }
-
-    function createCartItemElement(itemName, itemPrice) {
-        const itemElement = document.createElement('div');
-        itemElement.classList.add('receipt-item');
-        itemElement.dataset.name = itemName;
-        itemElement.innerHTML = `
-            <div class="receipt-item-details">
-                <p class="item-name">${itemName}</p>
-                <p class="item-price">$${itemPrice.toFixed(2)}</p>
-            </div>
-            <div class="receipt-item-actions">
-                <button class="remove-button">Remove</button>
-                <div class="receipt-item-quantity">
-                    <button class="quantity-button decrement"><i class="fa fa-minus"></i></button>
-                    <p class="item-quantity">1</p>
-                    <button class="quantity-button increment"><i class="fa fa-plus"></i></button>
-                </div>
-            </div>`;
-
-        // Add event listener for remove button
-        const removeButton = itemElement.querySelector('.remove-button');
-        removeButton.addEventListener('click', function() {
-            cart.removeChild(itemElement);
-            updateTotal();
-        });
-
-        // Add event listeners for quantity buttons
-        const decrementButton = itemElement.querySelector('.decrement');
-        const incrementButton = itemElement.querySelector('.increment');
-
-        decrementButton.addEventListener('click', function() {
-            handleQuantityChange(itemElement, -1);
-        });
-
-        incrementButton.addEventListener('click', function() {
-            handleQuantityChange(itemElement, 1);
-        });
-
-        return itemElement;
-    }
-
-    function handleQuantityChange(itemElement, change) {
-        const currentQuantity = parseInt(itemElement.querySelector('.item-quantity').innerText);
-        const newQuantity = currentQuantity + change;
-
-        if (newQuantity > 0) {
-            itemElement.querySelector('.item-quantity').innerText = newQuantity;
-            updateItemTotal(itemElement, newQuantity);
-            updateTotal();
-        }
-    }
-
-    function updateItemTotal(itemElement, quantity) {
-        const itemPrice = parseFloat(itemElement.querySelector('.item-price').innerText.replace('$', ''));
-        const itemTotalElement = itemElement.querySelector('.item-total');
-        const itemTotal = itemPrice * quantity;
-        itemTotalElement.innerText = `$${itemTotal.toFixed(2)}`;
-    }
-
-    function updateTotal() {
-        const items = document.querySelectorAll('.receipt-item');
-        let totalPrice = 0;
-
-        items.forEach(item => {
-            const price = parseFloat(item.querySelector('.item-price').innerText.replace('$', ''));
-            const quantity = parseInt(item.querySelector('.item-quantity').innerText);
-            totalPrice += price * quantity;
-        });
-
-        totalElement.innerText = totalPrice.toFixed(2);
-    }
-});
-
-
-
 const products = [
     // Drinks
     { category: "drinks", name: "Blueberry Juice", price: "2$", image: "./assets/images/drinks/blueberry-juice.png" },
-    { category: "drinks", name: "Brewed Coffee", price: "2$", image: "./assets/images/drinks/brewed-coffee.png" },
+    { category: "drinks", name: "Brewed Coffee", price: "10$", image: "./assets/images/drinks/brewed-coffee.png" },
     { category: "drinks", name: "Coke", price: "2$", image: "./assets/images/drinks/coke.png" },
     { category: "drinks", name: "Dark Caramel Brew", price: "2$", image: "./assets/images/drinks/dark-caramel-brew.png" },
     { category: "drinks", name: "Espresso", price: "2$", image: "./assets/images/drinks/espresso.png" },
@@ -222,14 +114,17 @@ function createProductItem(product) {
         <p>${product.price}</p>
         <div class="quantity-container">
             <div class="quantity">
-                <button><i class="fa fa-minus"></i></button>
+                <button class="quantity-button decrement" data-id="product_${product.name.replace(/\s+/g, '_').toLowerCase()}"><i class="fa fa-minus"></i></button>
                 <p>0</p>
-                <button><i class="fa fa-plus"></i></button>
+                <button class="quantity-button increment" data-id="product_${product.name.replace(/\s+/g, '_').toLowerCase()}"><i class="fa fa-plus"></i></button>
             </div>
             <div class="add-product">
-                <button class="add-button" data-name="${product.name}" data-price="${product.price}">Add</button>
+                <button class="add-button" data-id="product_${product.name.replace(/\s+/g, '_').toLowerCase()}" data-name="${product.name}" data-price="${product.price}">Add</button>
             </div>
         </div>
+
+
+
     `;
 
     return productItem;
@@ -240,10 +135,146 @@ products.forEach(product => {
     productContainer.appendChild(productItem);
 });
 
-for (const product of products) {
-    const imageNameParts = product.image.split('/');
-    const imageName = imageNameParts[imageNameParts.length - 1].replace('.png', ''); // Extract the name between slashes and remove '.png'
-    product.name = imageName;
-}
 
-console.log(products);
+document.addEventListener('DOMContentLoaded', function() {
+    const buttons = document.querySelectorAll('.add-button');
+    const cart = document.querySelector('.receipt-cart');
+    const totalElement = document.getElementById('total');
+
+    
+    buttons.forEach(button => {
+        button.addEventListener('click', handleAddButtonClick);
+    });
+
+    function handleAddButtonClick() {
+        const itemName = this.dataset.name;
+        const itemPrice = parseFloat(this.dataset.price);
+    
+        // Get the quantity selected in the product container
+        const quantitySelected = this.parentElement.querySelector('.quantity p').textContent || 0;
+    
+        // Check if item is already in the cart
+        const existingItem = Array.from(cart.children).find(item => item.dataset.name === itemName);
+    
+        if (existingItem) {
+            const quantityElement = existingItem.querySelector('.item-quantity');
+            const newQuantity = quantitySelected; // Set the quantity from the product container
+            quantityElement.innerText = newQuantity;
+    
+            // Update the total for the existing item
+            updateItemTotal(existingItem, newQuantity, itemPrice);
+        } else {
+            // Item is not in the cart, create a new entry
+            const itemElement = createCartItemElement(itemName, itemPrice, quantitySelected);
+            cart.appendChild(itemElement);
+        }
+    
+        // Update total price
+        updateTotal();
+    }
+    
+
+    function createCartItemElement(itemName, itemPrice, initialQuantity) {
+        const itemElement = document.createElement('div');
+        itemElement.classList.add('receipt-item');
+        itemElement.dataset.name = itemName;
+        itemElement.innerHTML = `
+            <div class="receipt-item-details">
+                <p class="item-name">${itemName}</p>
+                <p class="item-price">$${itemPrice.toFixed(2)}</p>
+            </div>
+            <div class="receipt-item-actions">
+                <button class="remove-button">Remove</button>
+                <div class="receipt-item-quantity">
+                    <button class="quantity-button decrement"><i class="fa fa-minus"></i></button>
+                    <p class="item-quantity">${initialQuantity}</p>
+                    <button class="quantity-button increment"><i class="fa fa-plus"></i></button>
+                </div>
+            </div>`;
+
+        // Add event listener for remove button
+        const removeButton = itemElement.querySelector('.remove-button');
+        removeButton.addEventListener('click', function() {
+            cart.removeChild(itemElement);
+            updateTotal();
+        });
+
+        // Add event listeners for quantity buttons
+        const decrementButton = itemElement.querySelector('.decrement');
+        const incrementButton = itemElement.querySelector('.increment');
+
+        decrementButton.addEventListener('click', function() {
+            handleQuantityChange(itemElement, -1, itemPrice);
+        });
+
+        incrementButton.addEventListener('click', function() {
+            handleQuantityChange(itemElement, 1, itemPrice);
+        });
+
+        return itemElement;
+    }
+
+    function handleQuantityChange(itemElement, change, itemPrice) {
+        const currentQuantity = parseInt(itemElement.querySelector('.item-quantity').innerText);
+        const newQuantity = currentQuantity + change;
+
+        if (newQuantity >= 0) {
+            itemElement.querySelector('.item-quantity').innerText = newQuantity;
+            updateTotal();
+        }
+    }
+
+    function updateTotal() {
+        const items = document.querySelectorAll('.receipt-item');
+        let totalPrice = 0;
+
+        items.forEach(item => {
+            const price = parseFloat(item.querySelector('.item-price').innerText.replace('$', ''));
+            const quantity = parseInt(item.querySelector('.item-quantity').innerText);
+            totalPrice += price * quantity;
+        });
+
+        totalElement.innerText = `$${totalPrice.toFixed(2)}`;
+    }
+});
+
+
+let quantities = {};
+document.querySelectorAll('.quantity-button.increment').forEach(function(button) {
+    button.addEventListener('click', function() {
+        const productId = this.dataset.id;
+        if (!quantities[productId]) {
+            quantities[productId] = 0;
+        }
+        quantities[productId]++;
+        this.parentElement.querySelector('.quantity p').textContent = quantities[productId];
+    });
+});
+
+document.querySelectorAll('.quantity-button.decrement').forEach(function(button) {
+    button.addEventListener('click', function() {
+        const productId = this.dataset.id;
+        if (quantities[productId] > 0) {
+            quantities[productId]--;
+            this.parentElement.querySelector('.quantity p').textContent = quantities[productId];
+        }
+    });
+});
+
+
+
+document.querySelectorAll('.add-button').forEach(function(button) {
+    button.addEventListener('click', function() {
+        const productId = this.dataset.id;
+        const productPrice = this.dataset.price;
+        const productName = this.dataset.name;
+
+        // Create a separate quantities object for each product
+        if (!quantities[productId]) {
+            quantities[productId] = 0;
+        }
+
+        // Now you can use quantities[productId] to get the quantity for this product
+    });
+});
+

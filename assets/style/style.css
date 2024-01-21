@@ -231,6 +231,7 @@ main, nav, aside {
     border-style: none;
     padding: 0.3rem;
     background-color: #fd7d3c;
+    cursor: pointer;
 }
 
 .add-product button {
@@ -240,6 +241,7 @@ main, nav, aside {
     background-color: #9ec461;
     color: rgb(12, 11, 11);
     width: 4rem;
+    cursor: pointer;
 }
 
 aside{
