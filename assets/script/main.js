@@ -140,8 +140,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const buttons = document.querySelectorAll('.add-button');
     const cart = document.querySelector('.receipt-cart');
     const totalElement = document.getElementById('total');
+    let quantities = {}; // Move quantities outside to track them globally
 
-    
     buttons.forEach(button => {
         button.addEventListener('click', handleAddButtonClick);
     });
@@ -149,30 +149,33 @@ document.addEventListener('DOMContentLoaded', function() {
     function handleAddButtonClick() {
         const itemName = this.dataset.name;
         const itemPrice = parseFloat(this.dataset.price);
-    
-        // Get the quantity selected in the product container
-        const quantitySelected = this.parentElement.querySelector('.quantity p').textContent || 0;
-    
-        // Check if item is already in the cart
+        const productId = this.dataset.id;
+
+        const quantitySelected = parseInt(this.parentElement.parentElement.querySelector('.quantity p').textContent) || 0;
+
         const existingItem = Array.from(cart.children).find(item => item.dataset.name === itemName);
-    
+
         if (existingItem) {
             const quantityElement = existingItem.querySelector('.item-quantity');
-            const newQuantity = quantitySelected; // Set the quantity from the product container
+            const newQuantity = parseInt(quantityElement.innerText) + quantitySelected; // Add the quantity from the product container
             quantityElement.innerText = newQuantity;
-    
-            // Update the total for the existing item
+
+            
             updateItemTotal(existingItem, newQuantity, itemPrice);
         } else {
-            // Item is not in the cart, create a new entry
+            
             const itemElement = createCartItemElement(itemName, itemPrice, quantitySelected);
             cart.appendChild(itemElement);
         }
-    
-        // Update total price
+
+       
+        const quantityElement = this.parentElement.parentElement.querySelector('.quantity p');
+        quantities[productId] = 0; 
+        quantityElement.textContent = 0; 
+
+
         updateTotal();
     }
-    
 
     function createCartItemElement(itemName, itemPrice, initialQuantity) {
         const itemElement = document.createElement('div');
@@ -239,6 +242,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 
+
 let quantities = {};
 document.querySelectorAll('.quantity-button.increment').forEach(function(button) {
     button.addEventListener('click', function() {
@@ -274,7 +278,7 @@ document.querySelectorAll('.add-button').forEach(function(button) {
             quantities[productId] = 0;
         }
 
-        // Now you can use quantities[productId] to get the quantity for this product
+ 
     });
 });
 
